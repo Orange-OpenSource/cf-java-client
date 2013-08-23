@@ -44,6 +44,8 @@ import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ConnectHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -79,44 +81,69 @@ import org.springframework.web.client.RestTemplate;
  * @author Thomas Risberg
  */
 @RunWith(BMUnitRunner.class)
-@BMRules(rules={
-        @BMRule(name="1- throw IOException socket opening",
-                targetClass = "^java.net.Socket",
-                targetMethod = "<init> (String , int , InetAddress,  int)",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1, $2)"),
-        @BMRule(name="2- throw IOException socket opening",
-                targetClass = "^java.net.Socket",
-                targetMethod = "<init> (SocketAddress , SocketAddress, boolean )",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1)"),
-        @BMRule(name="3- throw IOException SSL socket opening",
-                targetClass = "^java.net.ssl.SSLSocket",
-                targetMethod = "<init> (InetAddress , int )",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1)"),
-        @BMRule(name="4- throw IOException SSL socket opening",
-                targetClass = "^java.net.ssl.SSLSocket",
-                targetMethod = "<init> (InetAddress, int , InetAddress , int )",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1, $2)"),
-        @BMRule(name="5- throw IOException SSL socket opening",
-                targetClass = "^java.net.ssl.SSLSocket",
-                targetMethod = "<init> (String, int )",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1, $2)"),
-        @BMRule(name="6- throw IOException SSL socket opening",
-                targetClass = "^java.net.ssl.SSLSocket",
-                targetMethod = "<init> (String, int ,InetAddress , int )",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1, $2)"),
-        @BMRule(name="7- throw IOException SSL socket opening",
-                targetClass = "^java.net.ssl.SSLSocketFactory",
-                targetMethod = "getDefault()",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "getDefaultSslSocketFactory()"),
-
-})
+@BMScript(value="trace", dir="target/test-classes")
+//@BMRules(rules={
+//        @BMRule(name="1- throw IOException socket opening",
+//                targetClass = "^java.net.Socket",
+//                targetMethod = "<init> (String , int , InetAddress,  int)",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1, $2)"),
+//        @BMRule(name="2- throw IOException socket opening",
+//                targetClass = "^java.net.Socket",
+//                targetMethod = "<init> (SocketAddress , SocketAddress, boolean )",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1)"),
+//        @BMRule(name="2c- throw IOException socket opening",
+//                targetClass = "^java.net.Socket",
+//                targetMethod = "checkAddress (InetAddress addr, String op)",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "alwaysThrowException()"), //throwExceptionIfForbidden($1)
+//
+//        @BMRule(name="2c- throw IOException socket opening",
+//                targetClass = "^java.net.Socket",
+//                targetMethod = "connect(SocketAddress)",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1)"),
+//
+///*
+//        @BMRule(name="2c- throw IOException socket opening",
+//                targetClass = "^java.net.Socket",
+//                targetMethod = "connect(SocketAddress, int )",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "alwaysThrowException()"), //throwExceptionIfForbidden($1)
+//*/
+//        @BMRule(name="3- throw IOException SSL socket opening",
+//                targetClass = "^java.net.ssl.SSLSocket",
+//                targetMethod = "<init> (InetAddress , int )",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1)"),
+//        @BMRule(name="4- throw IOException SSL socket opening",
+//                targetClass = "^java.net.ssl.SSLSocket",
+//                targetMethod = "<init> (InetAddress, int , InetAddress , int )",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1, $2)"),
+//        @BMRule(name="5- throw IOException SSL socket opening",
+//                targetClass = "^java.net.ssl.SSLSocket",
+//                targetMethod = "<init> (String, int )",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1, $2)"),
+//        @BMRule(name="6- throw IOException SSL socket opening",
+//                targetClass = "^java.net.ssl.SSLSocket",
+//                targetMethod = "<init> (String, int ,InetAddress , int )",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "throwExceptionIfForbidden($1, $2)"),
+//        @BMRule(name="7- throw IOException SSL socket opening",
+//                targetClass = "^java.net.ssl.SSLSocketFactory",
+//                targetMethod = "getDefault()",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = "getDefaultSslSocketFactory()"),
+//        @BMRule(name="7- throw IOException SSL socket opening",
+//                targetClass = "^java.net.ssl.SSLSocketFactory",
+//                targetMethod = "createSocket()",
+//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+//                action = ""),
+//
+//})
 public class CloudFoundryClientTest {
 
     private static final String FAKE_FDQN_PROXIED_SUFFIX = ".injvmproxy.io";
@@ -199,14 +226,12 @@ public class CloudFoundryClientTest {
         }
         URL cloudControllerUrl;
         if (! SKIP_INJVM_PROXY) {
-            SocketDestHelper.setForbiddenOnCurrentThread();
+            new SocketDestHelper().setForbiddenOnCurrentThread();
             startInJvmProxy();
             HttpProxyConfiguration inJvmHttpProxyConfiguration = new HttpProxyConfiguration("127.0.0.1", inJvmProxyPort);
             httpProxyConfiguration = inJvmHttpProxyConfiguration;
-            cloudControllerUrl = new URL(CCNG_API_URL + FAKE_FDQN_PROXIED_SUFFIX);
-        } else {
-            cloudControllerUrl = new URL(CCNG_API_URL);
         }
+        cloudControllerUrl = new URL(CCNG_API_URL);
         connectedClient = new CloudFoundryClient(new CloudCredentials(CCNG_USER_EMAIL, CCNG_USER_PASS),
                 cloudControllerUrl, CCNG_USER_ORG, CCNG_USER_SPACE, httpProxyConfiguration);
 		connectedClient.login();
@@ -214,8 +239,8 @@ public class CloudFoundryClientTest {
 		
 		// Optimization to avoid redoing the work already done is tearDown()
 		if (!tearDownComplete) {
-			tearDown();
-		}
+            cleanUp();
+        }
 		tearDownComplete = false;
 		connectedClient.addDomain(TEST_DOMAIN);
 		
@@ -224,11 +249,7 @@ public class CloudFoundryClientTest {
 
 	@After
 	public void tearDown() throws Exception {
-		// Clean after ourselves so that there are no leftover apps, services, domains, and routes
-		connectedClient.deleteAllApplications();
-		connectedClient.deleteAllServices();
-		clearTestDomainAndRoutes();
-		tearDownComplete = true;
+        cleanUp();
 
         if (inJvmProxyServer != null) {
             inJvmProxyServer.stop();
@@ -236,7 +257,16 @@ public class CloudFoundryClientTest {
         }
 	}
 
-	@Test
+    private void cleanUp() {
+        // Clean after ourselves so that there are no leftover apps, services, domains, and routes
+        connectedClient.deleteAllApplications();
+        connectedClient.deleteAllServices();
+        clearTestDomainAndRoutes();
+        tearDownComplete = true;
+    }
+
+
+    @Test
 	public void infoAvailable() throws Exception {
 		CloudInfo info = connectedClient.getCloudInfo();
 		assertNotNull(info.getName());
@@ -268,11 +298,25 @@ public class CloudFoundryClientTest {
         QueuedThreadPool threadPool = new QueuedThreadPool();
         threadPool.setMinThreads(1);
         inJvmProxyServer.setThreadPool(threadPool);
-        ServletHandler handler = new ServletHandler();
-        inJvmProxyServer.setHandler(handler);
+
+        HandlerCollection handlers = new HandlerCollection();
+        inJvmProxyServer.setHandler(handlers);
+
+        ServletHandler servletHandler = new ServletHandler();
+        handlers.addHandler(servletHandler);
         nbInJvmProxyRcvReqs = new AtomicInteger();
         InterceptingProxyServlet interceptingProxyServlet = new InterceptingProxyServlet(httpProxyConfiguration, FAKE_FDQN_PROXIED_SUFFIX, nbInJvmProxyRcvReqs);
-        handler.addServletWithMapping(new ServletHolder(interceptingProxyServlet), "/*");
+        servletHandler.addServletWithMapping(new ServletHolder(interceptingProxyServlet), "/*");
+
+        // Setup proxy handler to handle CONNECT methods
+        ConnectHandler proxyHandler;
+        if (httpProxyConfiguration != null) {
+            proxyHandler = new ChainedProxyConnectHandler(httpProxyConfiguration);
+        } else {
+            proxyHandler = new ConnectHandler();
+        }
+        handlers.addHandler(proxyHandler);
+
         inJvmProxyServer.start();
     }
 
@@ -1483,4 +1527,5 @@ public class CloudFoundryClientTest {
 	private String getMysqlLabel() {
 		return "cleardb";
 	}
+
 }

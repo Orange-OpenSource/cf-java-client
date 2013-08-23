@@ -10,20 +10,24 @@ import java.net.*;
  */
 public class SocketDestHelper {
 
-    static ThreadLocal<Boolean> isSocketRestrictingOnlyLocalHost = new ThreadLocal<Boolean>();
+    private static final ThreadLocal<Boolean> isSocketRestrictingOnlyLocalHost = new ThreadLocal<Boolean>();
 
-    public static void setForbiddenOnCurrentThread() {
+    public  void setForbiddenOnCurrentThread() {
         isSocketRestrictingOnlyLocalHost.set(true);
     }
 
     public void alwaysThrowException() throws IOException {
-        throw new IOException("only proxy threads should go through external hosts");
+        IOException ioe = new IOException("always throws IOE");
+        ioe.printStackTrace();
+        throw ioe;
     }
+
     public void throwExceptionIfForbidden(String host, int port) throws IOException {
         System.out.println("throwExceptionIfForbidden(host=" + host + " port=" + port + ") with isSocketRestrictingOnlyLocalHost=" + isSocketRestrictingOnlyLocalHost.get());
-        if (isSocketRestrictingOnlyLocalHost.get()) {
+        Boolean flag = isSocketRestrictingOnlyLocalHost.get();
+        if (flag != null && flag.booleanValue()) {
             if (! host.equals("127.0.0.1") && ! host.equals("localhost")) {
-                IOException ioe = new IOException("only proxy threads should go through external hosts, got:host=" + host + " port=" + port);
+                IOException ioe = new IOException("detected direct socket connect while tests expect them to go through proxy instead: Only jetty proxy threads should go through external hosts, got:host=" + host + " port=" + port);
                 ioe.printStackTrace();
                 throw ioe;
             }
