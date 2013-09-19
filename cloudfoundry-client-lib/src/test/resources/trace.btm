@@ -1,4 +1,7 @@
-RULE 1- throw IOException socket opening
+# See detailed doc at http://downloads.jboss.org/byteman/2.1.3/ProgrammersGuideSinglePage.2.1.3.1.html
+# The ^ prefix attached to the class name tells the agent that the rule should apply to implementations of finalize defined either by class Object or by any class which extends Object. This prefix can also be used with interface rules, requiring the agent to inject the rule code into methods of classes which implement the interface and also into overriding methods on subclasses of the implementing classes.
+
+RULE 1- Socket.<init> (String , int , InetAddress,  int)
 CLASS ^java.net.Socket
 METHOD <init> (String , int , InetAddress,  int)
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -6,7 +9,7 @@ IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 2- throw IOException socket opening
+RULE 2- Socket.<init> (SocketAddress , SocketAddress, boolean )
 CLASS ^java.net.Socket
 METHOD <init> (SocketAddress , SocketAddress, boolean )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -23,7 +26,7 @@ IF TRUE
 DO alwaysThrowException()"), //throwExceptionIfForbidden($1)
 ENDRULE
 
-RULE 2c- throw IOException socket opening: throws IOException if a socket is unexpectedly directly openened without going through http proxy
+RULE 3- java.net.Socket.connect(SocketAddress)
 CLASS ^java.net.Socket
 METHOD connect(SocketAddress)
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -40,7 +43,7 @@ ENDRULE
 # DO alwaysThrowException()"), //throwExceptionIfForbidden($1)
 # ENDRULE
 
-RULE 3- throw IOException SSL socket opening
+RULE 4- java.net.ssl.SSLSocket.<init> (InetAddress , int )
 CLASS ^java.net.ssl.SSLSocket
 METHOD <init> (InetAddress , int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -48,7 +51,7 @@ IF TRUE
 DO throwExceptionIfForbidden($1)
 ENDRULE
 
-RULE 4- throw IOException SSL socket opening
+RULE 5- java.net.ssl.SSLSocket.<init> (InetAddress, int , InetAddress , int )
 CLASS ^java.net.ssl.SSLSocket
 METHOD <init> (InetAddress, int , InetAddress , int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -56,7 +59,7 @@ IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 5- throw IOException SSL socket opening
+RULE 6- java.net.ssl.SSLSocket.<init> (String, int )
 CLASS ^java.net.ssl.SSLSocket
 METHOD <init> (String, int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -64,7 +67,7 @@ IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 6- throw IOException SSL socket opening
+RULE 7- java.net.ssl.SSLSocket.<init> (String, int ,InetAddress , int )
 CLASS ^java.net.ssl.SSLSocket
 METHOD <init> (String, int ,InetAddress , int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
@@ -72,11 +75,18 @@ IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 7- throw IOException SSL socket opening
-CLASS ^java.net.ssl.SSLSocketFactory
+RULE 8- java.net.ssl.SSLSocketFactory.getDefault()
+INTERFACE ^java.net.ssl.SSLSocketFactory
 METHOD getDefault()
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
 IF TRUE
 DO getDefaultSslSocketFactory()
 ENDRULE
 
+RULE 0- java.net.ssl.SSLSocketFactory.getDefault()
+CLASS ^java.net.ssl.SSLSocketFactory
+METHOD getDefault()
+HELPER org.cloudfoundry.client.lib.SocketDestHelper
+IF TRUE
+DO getDefaultSslSocketFactory()
+ENDRULE

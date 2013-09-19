@@ -65,8 +65,10 @@ import org.junit.runner.RunWith;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.CommonsClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestClientException;
@@ -222,29 +224,39 @@ public class CloudFoundryClientTest {
 		assertNotNull(info.getName());
 		assertNotNull(info.getSupport());
 		assertNotNull(info.getBuild());
-        assertTrue(SKIP_INJVM_PROXY || nbInJvmProxyRcvReqs.get() >1 );
     }
 
+    /**
+     * Self tests that the assert mechanisms with jetty and byteman are properly working. If debugging is needed
+     * consider enabling one or more of the following system properties
+     * -Dorg.jboss.byteman.verbose=true
+     * -Dorg.jboss.byteman.debug=true
+     * -Dorg.jboss.byteman.rule.debug=true
+     * -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog
+     * -Dorg.eclipse.jetty.LEVEL=INFO
+     * -Dorg.eclipse.jetty.server.LEVEL=INFO
+     * -Dorg.eclipse.jetty.server.handler.ConnectHandler=DEBUG
+     * Documentation on byteman at http://downloads.jboss.org/byteman/2.1.3/ProgrammersGuideSinglePage.2.1.3.1.html
+     */
     @Test
     public void checkByteManrulesAndInJvmProxyAssertMechanisms() {
         if (SKIP_INJVM_PROXY) {
             return; //inJvm Proxy test skipped.
         }
+        System.out.println("In method checkByteManrulesAndInJvmProxyAssertMechanisms with installed byteman rules=" + SocketDestHelper.getInstalledRules());
+        System.out.flush();
+        new SocketDestHelper().setForbiddenOnCurrentThread();
+
+        assertTrue(SocketDestHelper.isActivated());
+        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper.getInstalledRules().isEmpty());
+        assertTrue(SocketDestHelper.isSocketRestrictionFlagActive());
+
         RestTemplate restTemplate = new RestTemplate();
-        CommonsClientHttpRequestFactory requestFactory = new CommonsClientHttpRequestFactory();
-
-        //when called with a proxy
-        requestFactory.getHttpClient().getHostConfiguration().setProxy("127.0.0.1", inJvmProxyPort);
-        restTemplate.setRequestFactory(requestFactory);
-        restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET,null, null);
-
-        //then executes fines, and the jetty proxy indeed received one request
-        assertEquals("expected network calls to make it through the inJvmProxy.", 1, nbInJvmProxyRcvReqs.get());
-        nbInJvmProxyRcvReqs.set(0); //reset for next test
+        ClientHttpRequestFactory requestFactory;
 
         //when called directly without a proxy, and we configure byteman to detect them
-        requestFactory = new CommonsClientHttpRequestFactory();//avoid reusing keep alive connections
-        requestFactory.getHttpClient().getHostConfiguration().setProxyHost(null);
+        requestFactory = new SimpleClientHttpRequestFactory(); //Note: our byteman rules fail to capture HttpClient calls through SSLLSocketFactory.getDefault()
+        requestFactory = new CommonsClientHttpRequestFactory();
         restTemplate.setRequestFactory(requestFactory);
         try {
             HttpStatus status = restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET, null, new ResponseExtractor<HttpStatus>() {
@@ -252,13 +264,22 @@ public class CloudFoundryClientTest {
                     return response.getStatusCode();
                 }
             });
-            Assert.fail("Expected byteman rules to detect direct socket connections");
+            Assert.fail("Expected byteman rules to detect direct socket connections, status is:" + status);
         } catch (Exception e) {
             e.printStackTrace();
         }
         assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0, nbInJvmProxyRcvReqs.get());
 
+        //when called with a proxy
+        requestFactory = new CommonsClientHttpRequestFactory();//avoid reusing keep alive connections
+        CommonsClientHttpRequestFactory commonsFactory = (CommonsClientHttpRequestFactory) requestFactory;
+        commonsFactory.getHttpClient().getHostConfiguration().setProxy("127.0.0.1", inJvmProxyPort);
+        restTemplate.setRequestFactory(requestFactory);
+        restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET,null, null);
 
+        //then executes fines, and the jetty proxy indeed received one request
+        assertEquals("expected network calls to make it through the inJvmProxy.", 1, nbInJvmProxyRcvReqs.get());
+        nbInJvmProxyRcvReqs.set(0); //reset for next test
     }
 
 
