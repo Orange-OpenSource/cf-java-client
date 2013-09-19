@@ -42,6 +42,8 @@ import org.cloudfoundry.client.lib.domain.InstanceState;
 import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.cloudfoundry.client.lib.oauth2.OauthClient;
+import org.cloudfoundry.client.lib.rest.LoggingRestTemplate;
 import org.cloudfoundry.client.lib.util.RestUtil;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ConnectHandler;
@@ -53,12 +55,7 @@ import org.jboss.byteman.contrib.bmunit.BMRule;
 import org.jboss.byteman.contrib.bmunit.BMRules;
 import org.jboss.byteman.contrib.bmunit.BMScript;
 import org.jboss.byteman.contrib.bmunit.BMUnitRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
@@ -66,8 +63,13 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.http.client.CommonsClientHttpRequestFactory;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResponseExtractor;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -81,72 +83,17 @@ import org.springframework.web.client.RestTemplate;
  * @author Thomas Risberg
  */
 @RunWith(BMUnitRunner.class)
+/*@BMRules(
+        rules={
+        @BMRule(name="throws IOException if a socket is unexpectedly directly openened without going through http proxy",
+                targetClass = "^java.net.Socket",
+                targetMethod = "connect(SocketAddress)",
+                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
+                action = "throwExceptionIfForbidden($1)"),
+}) */
 @BMScript(value="trace", dir="target/test-classes")
-//@BMRules(rules={
-//        @BMRule(name="1- throw IOException socket opening",
-//                targetClass = "^java.net.Socket",
-//                targetMethod = "<init> (String , int , InetAddress,  int)",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1, $2)"),
-//        @BMRule(name="2- throw IOException socket opening",
-//                targetClass = "^java.net.Socket",
-//                targetMethod = "<init> (SocketAddress , SocketAddress, boolean )",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1)"),
-//        @BMRule(name="2c- throw IOException socket opening",
-//                targetClass = "^java.net.Socket",
-//                targetMethod = "checkAddress (InetAddress addr, String op)",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "alwaysThrowException()"), //throwExceptionIfForbidden($1)
-//
-//        @BMRule(name="2c- throw IOException socket opening",
-//                targetClass = "^java.net.Socket",
-//                targetMethod = "connect(SocketAddress)",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1)"),
-//
-///*
-//        @BMRule(name="2c- throw IOException socket opening",
-//                targetClass = "^java.net.Socket",
-//                targetMethod = "connect(SocketAddress, int )",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "alwaysThrowException()"), //throwExceptionIfForbidden($1)
-//*/
-//        @BMRule(name="3- throw IOException SSL socket opening",
-//                targetClass = "^java.net.ssl.SSLSocket",
-//                targetMethod = "<init> (InetAddress , int )",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1)"),
-//        @BMRule(name="4- throw IOException SSL socket opening",
-//                targetClass = "^java.net.ssl.SSLSocket",
-//                targetMethod = "<init> (InetAddress, int , InetAddress , int )",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1, $2)"),
-//        @BMRule(name="5- throw IOException SSL socket opening",
-//                targetClass = "^java.net.ssl.SSLSocket",
-//                targetMethod = "<init> (String, int )",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1, $2)"),
-//        @BMRule(name="6- throw IOException SSL socket opening",
-//                targetClass = "^java.net.ssl.SSLSocket",
-//                targetMethod = "<init> (String, int ,InetAddress , int )",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "throwExceptionIfForbidden($1, $2)"),
-//        @BMRule(name="7- throw IOException SSL socket opening",
-//                targetClass = "^java.net.ssl.SSLSocketFactory",
-//                targetMethod = "getDefault()",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = "getDefaultSslSocketFactory()"),
-//        @BMRule(name="7- throw IOException SSL socket opening",
-//                targetClass = "^java.net.ssl.SSLSocketFactory",
-//                targetMethod = "createSocket()",
-//                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-//                action = ""),
-//
-//})
 public class CloudFoundryClientTest {
 
-    private static final String FAKE_FDQN_PROXIED_SUFFIX = ".injvmproxy.io";
     private CloudFoundryClient connectedClient;
 
 	// Pass -Dccng.target=http://api.cloudfoundry.com, vcap.me, or your own cloud -- must point to a v2 cloud controller
@@ -245,7 +192,10 @@ public class CloudFoundryClientTest {
 		connectedClient.addDomain(TEST_DOMAIN);
 		
 		// connectedClient.registerRestLogListener(new RestLogger("CF_REST"));
-	}
+        if (nbInJvmProxyRcvReqs != null) {
+            nbInJvmProxyRcvReqs.set(0); //reset calls made in setup to leave a clean state for tests to assert
+        }
+    }
 
 	@After
 	public void tearDown() throws Exception {
@@ -274,6 +224,44 @@ public class CloudFoundryClientTest {
 		assertNotNull(info.getBuild());
         assertTrue(SKIP_INJVM_PROXY || nbInJvmProxyRcvReqs.get() >1 );
     }
+
+    @Test
+    public void checkByteManrulesAndInJvmProxyAssertMechanisms() {
+        if (SKIP_INJVM_PROXY) {
+            return; //inJvm Proxy test skipped.
+        }
+        RestTemplate restTemplate = new RestTemplate();
+        CommonsClientHttpRequestFactory requestFactory = new CommonsClientHttpRequestFactory();
+
+        //when called with a proxy
+        requestFactory.getHttpClient().getHostConfiguration().setProxy("127.0.0.1", inJvmProxyPort);
+        restTemplate.setRequestFactory(requestFactory);
+        restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET,null, null);
+
+        //then executes fines, and the jetty proxy indeed received one request
+        assertEquals("expected network calls to make it through the inJvmProxy.", 1, nbInJvmProxyRcvReqs.get());
+        nbInJvmProxyRcvReqs.set(0); //reset for next test
+
+        //when called directly without a proxy, and we configure byteman to detect them
+        requestFactory = new CommonsClientHttpRequestFactory();//avoid reusing keep alive connections
+        requestFactory.getHttpClient().getHostConfiguration().setProxyHost(null);
+        restTemplate.setRequestFactory(requestFactory);
+        try {
+            HttpStatus status = restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET, null, new ResponseExtractor<HttpStatus>() {
+                public HttpStatus extractData(ClientHttpResponse response) throws IOException {
+                    return response.getStatusCode();
+                }
+            });
+            Assert.fail("Expected byteman rules to detect direct socket connections");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0, nbInJvmProxyRcvReqs.get());
+
+
+    }
+
+
 
     private int getNextAvailablePort(int initial) {
         int current = initial;
@@ -305,16 +293,12 @@ public class CloudFoundryClientTest {
         ServletHandler servletHandler = new ServletHandler();
         handlers.addHandler(servletHandler);
         nbInJvmProxyRcvReqs = new AtomicInteger();
-        InterceptingProxyServlet interceptingProxyServlet = new InterceptingProxyServlet(httpProxyConfiguration, FAKE_FDQN_PROXIED_SUFFIX, nbInJvmProxyRcvReqs);
+        InterceptingProxyServlet interceptingProxyServlet = new InterceptingProxyServlet(httpProxyConfiguration, nbInJvmProxyRcvReqs);
         servletHandler.addServletWithMapping(new ServletHolder(interceptingProxyServlet), "/*");
 
         // Setup proxy handler to handle CONNECT methods
         ConnectHandler proxyHandler;
-        if (httpProxyConfiguration != null) {
-            proxyHandler = new ChainedProxyConnectHandler(httpProxyConfiguration);
-        } else {
-            proxyHandler = new ConnectHandler();
-        }
+        proxyHandler = new ChainedProxyConnectHandler(httpProxyConfiguration, nbInJvmProxyRcvReqs);
         handlers.addHandler(proxyHandler);
 
         inJvmProxyServer.start();

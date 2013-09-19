@@ -81,7 +81,7 @@ public class OauthClient {
 		AccessTokenRequest request = createAccessTokenRequest(username, password);
 
 		ResourceOwnerPasswordAccessTokenProvider provider = new ResourceOwnerPasswordAccessTokenProvider();
-		
+
 		return provider.refreshAccessToken(resource, currentToken.getRefreshToken(), request);
 	}
 

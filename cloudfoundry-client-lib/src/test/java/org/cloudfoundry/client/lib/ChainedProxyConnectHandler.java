@@ -9,11 +9,11 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
 * Hacky connect handler which is able to open a chained proxy. Usefull when starting an InJvm proxy chained to another
@@ -23,68 +23,26 @@ class ChainedProxyConnectHandler extends ConnectHandler {
     private static final Logger logger = Log.getLogger(ChainedProxyConnectHandler.class);
 
     private HttpProxyConfiguration httpProxyConfiguration;
+    private AtomicInteger nbReceivedRequests;
 
-    public ChainedProxyConnectHandler(HttpProxyConfiguration httpProxyConfiguration) {
+    public ChainedProxyConnectHandler(HttpProxyConfiguration httpProxyConfiguration, AtomicInteger nbReceivedRequests) {
         this.httpProxyConfiguration = httpProxyConfiguration;
+        this.nbReceivedRequests = nbReceivedRequests;
     }
 
     protected SocketChannel connect(HttpServletRequest request, String host, int port) throws IOException
     {
-        SocketChannel channel = super.connect(request, httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort());
-        Socket socket = channel.socket();
+        nbReceivedRequests.incrementAndGet();
 
-        OutputStream out = socket.getOutputStream();
-        InputStream in = socket.getInputStream();
-
-
-        establishConnectHandshake(host, port, out, in);
-        if (false) {
-
-            // layer SSL on top of an existing socket used to challenge certificates
-            // src : http://stackoverflow.com/questions/537040/how-to-connect-to-a-secure-website-using-ssl-in-java-with-a-pkcs12-file
-            SSLContext sslContext= null;
-            try {
-                sslContext = SSLContext.getDefault();
-            } catch (NoSuchAlgorithmException e) {
-                throw new IOException(e);
-            }
-            //SSLContext sslContext;
-            try {
-                sslContext = sslNoCheckCertificate();
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-            SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-
-            SSLSocket sslSocket = null;
-            try {
-                sslSocket = (SSLSocket) sslSocketFactory.createSocket(socket, socket.getInetAddress().getHostName(), socket.getPort(), true);
-            } catch (IOException e) {
-                logger.warn("Caught " +e.toString(), e);
-                throw e;
-            }
-            sslSocket.setUseClientMode(true);
-            sslSocket.startHandshake();
-
-            return channel;
+        if (httpProxyConfiguration == null) {
+            return super.connect(request, host, port);
         } else {
+            SocketChannel channel = super.connect(request, httpProxyConfiguration.getProxyHost(), httpProxyConfiguration.getProxyPort());
+
+            Socket socket = channel.socket();
+            establishConnectHandshake(host, port, socket.getOutputStream(), socket.getInputStream());
             return channel;
         }
-    }
-
-    private SSLContext sslNoCheckCertificate() throws KeyManagementException, NoSuchAlgorithmException {
-        // Replaces the certificate checker with a less restrictive one
-        TrustManager[] trustAllCerts=new TrustManager[]{
-                new X509TrustManager(){
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers(){return null;}
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs,String authType){}
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs,String authType){}
-                }
-        };
-        SSLContext sslContext= SSLContext.getInstance("SSL");
-        sslContext.init(null,trustAllCerts,new java.security.SecureRandom());
-        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
-        return sslContext;
     }
 
     private void establishConnectHandshake(String host, int port, OutputStream out, InputStream in) throws IOException {
