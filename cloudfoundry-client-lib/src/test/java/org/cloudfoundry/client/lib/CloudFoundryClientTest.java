@@ -85,14 +85,6 @@ import org.springframework.web.client.RestTemplate;
  * @author Thomas Risberg
  */
 @RunWith(BMUnitRunner.class)
-/*@BMRules(
-        rules={
-        @BMRule(name="throws IOException if a socket is unexpectedly directly openened without going through http proxy",
-                targetClass = "^java.net.Socket",
-                targetMethod = "connect(SocketAddress)",
-                helper = "org.cloudfoundry.client.lib.SocketDestHelper",
-                action = "throwExceptionIfForbidden($1)"),
-}) */
 @BMScript(value="trace", dir="target/test-classes")
 public class CloudFoundryClientTest {
 
@@ -243,19 +235,13 @@ public class CloudFoundryClientTest {
         if (SKIP_INJVM_PROXY) {
             return; //inJvm Proxy test skipped.
         }
-        System.out.println("In method checkByteManrulesAndInJvmProxyAssertMechanisms with installed byteman rules=" + SocketDestHelper.getInstalledRules());
-        System.out.flush();
-        new SocketDestHelper().setForbiddenOnCurrentThread();
-
-        assertTrue(SocketDestHelper.isActivated());
-        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper.getInstalledRules().isEmpty());
         assertTrue(SocketDestHelper.isSocketRestrictionFlagActive());
 
         RestTemplate restTemplate = new RestTemplate();
         ClientHttpRequestFactory requestFactory;
 
         //when called directly without a proxy, and we configure byteman to detect them
-        requestFactory = new SimpleClientHttpRequestFactory(); //Note: our byteman rules fail to capture HttpClient calls through SSLLSocketFactory.getDefault()
+        //then we expect an exception to be thrown
         requestFactory = new CommonsClientHttpRequestFactory();
         restTemplate.setRequestFactory(requestFactory);
         try {
@@ -280,7 +266,11 @@ public class CloudFoundryClientTest {
         //then executes fines, and the jetty proxy indeed received one request
         assertEquals("expected network calls to make it through the inJvmProxy.", 1, nbInJvmProxyRcvReqs.get());
         nbInJvmProxyRcvReqs.set(0); //reset for next test
-    }
+
+        //Make sure
+        assertTrue(SocketDestHelper.isActivated());
+        assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper.getInstalledRules().isEmpty());
+   }
 
 
 

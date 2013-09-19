@@ -17,15 +17,6 @@ IF TRUE
 DO throwExceptionIfForbidden($1)
 ENDRULE
 
-# Does not seem to trigger
-RULE 2c- throw IOException socket opening
-CLASS ^java.net.Socket
-METHOD checkAddress (InetAddress addr, String op)
-HELPER org.cloudfoundry.client.lib.SocketDestHelper
-IF TRUE
-DO alwaysThrowException()"), //throwExceptionIfForbidden($1)
-ENDRULE
-
 RULE 3- java.net.Socket.connect(SocketAddress)
 CLASS ^java.net.Socket
 METHOD connect(SocketAddress)
@@ -43,50 +34,35 @@ ENDRULE
 # DO alwaysThrowException()"), //throwExceptionIfForbidden($1)
 # ENDRULE
 
-RULE 4- java.net.ssl.SSLSocket.<init> (InetAddress , int )
-CLASS ^java.net.ssl.SSLSocket
-METHOD <init> (InetAddress , int )
-HELPER org.cloudfoundry.client.lib.SocketDestHelper
-IF TRUE
-DO throwExceptionIfForbidden($1)
-ENDRULE
-
-RULE 5- java.net.ssl.SSLSocket.<init> (InetAddress, int , InetAddress , int )
-CLASS ^java.net.ssl.SSLSocket
-METHOD <init> (InetAddress, int , InetAddress , int )
+RULE 4- java.net.SocketFactory.createSocket(InetAddress host, int port)
+CLASS ^javax.net.SocketFactory
+METHOD createSocket(InetAddress host, int port)
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
 IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 6- java.net.ssl.SSLSocket.<init> (String, int )
-CLASS ^java.net.ssl.SSLSocket
-METHOD <init> (String, int )
+RULE 5- javax.net.SocketFactory.createSocket(InetAddress host, int port)
+CLASS ^javax.net.SocketFactory
+METHOD createSocket(InetAddress , int , InetAddress , int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
 IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 7- java.net.ssl.SSLSocket.<init> (String, int ,InetAddress , int )
-CLASS ^java.net.ssl.SSLSocket
-METHOD <init> (String, int ,InetAddress , int )
+RULE 6- javax.net.SocketFactory.createSocket(InetAddress host, int port)
+CLASS ^javax.net.SocketFactory
+METHOD createSocket(String, int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
 IF TRUE
 DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 8- java.net.ssl.SSLSocketFactory.getDefault()
-INTERFACE ^java.net.ssl.SSLSocketFactory
-METHOD getDefault()
+RULE 7- java.net.SocketFactory.createSocket(InetAddress host, int port)
+CLASS ^javax.net.SocketFactory
+METHOD createSocket(String ,int , InetAddress, int )
 HELPER org.cloudfoundry.client.lib.SocketDestHelper
 IF TRUE
-DO getDefaultSslSocketFactory()
+DO throwExceptionIfForbidden($1, $2)
 ENDRULE
 
-RULE 0- java.net.ssl.SSLSocketFactory.getDefault()
-CLASS ^java.net.ssl.SSLSocketFactory
-METHOD getDefault()
-HELPER org.cloudfoundry.client.lib.SocketDestHelper
-IF TRUE
-DO getDefaultSslSocketFactory()
-ENDRULE
