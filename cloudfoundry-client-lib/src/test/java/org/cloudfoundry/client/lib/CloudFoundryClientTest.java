@@ -275,7 +275,8 @@ public class CloudFoundryClientTest {
             });
             Assert.fail("Expected byteman rules to detect direct socket connections, status is:" + status);
         } catch (Exception e) {
-            e.printStackTrace();
+            //good, byteman rejected it as expected
+            //e.printStackTrace();
         }
         assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0, nbInJvmProxyRcvReqs.get());
     }

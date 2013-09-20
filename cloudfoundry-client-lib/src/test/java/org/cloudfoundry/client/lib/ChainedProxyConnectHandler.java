@@ -4,15 +4,12 @@ import org.eclipse.jetty.server.handler.ConnectHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-import javax.net.ssl.*;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -82,6 +79,7 @@ class ChainedProxyConnectHandler extends ConnectHandler {
         catch(Exception e){
         }
         if(code!=200){
+            logger.warn("Unable to handshake with upstream proxy to CONNECT to host=" + host + " port=" + port + " reason:" + reason);
             throw new IOException("proxy error: "+reason);
         }
 
