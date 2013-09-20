@@ -242,19 +242,9 @@ public class CloudFoundryClientTest {
 
         //when called directly without a proxy, and we configure byteman to detect them
         //then we expect an exception to be thrown
-        requestFactory = new CommonsClientHttpRequestFactory();
-        restTemplate.setRequestFactory(requestFactory);
-        try {
-            HttpStatus status = restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET, null, new ResponseExtractor<HttpStatus>() {
-                public HttpStatus extractData(ClientHttpResponse response) throws IOException {
-                    return response.getStatusCode();
-                }
-            });
-            Assert.fail("Expected byteman rules to detect direct socket connections, status is:" + status);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0, nbInJvmProxyRcvReqs.get());
+        assertNetworkCallFails(restTemplate, new CommonsClientHttpRequestFactory());
+        // Repeat that with different request factory used in the code as this exercise different byteman rules
+        assertNetworkCallFails(restTemplate, new SimpleClientHttpRequestFactory());
 
         //when called with a proxy
         requestFactory = new CommonsClientHttpRequestFactory();//avoid reusing keep alive connections
@@ -272,6 +262,20 @@ public class CloudFoundryClientTest {
         assertFalse("expected some installed rules, got:" + SocketDestHelper.getInstalledRules(), SocketDestHelper.getInstalledRules().isEmpty());
    }
 
+    private void assertNetworkCallFails(RestTemplate restTemplate, ClientHttpRequestFactory requestFactory) {
+        restTemplate.setRequestFactory(requestFactory);
+        try {
+            HttpStatus status = restTemplate.execute(CCNG_API_URL + "/info", HttpMethod.GET, null, new ResponseExtractor<HttpStatus>() {
+                public HttpStatus extractData(ClientHttpResponse response) throws IOException {
+                    return response.getStatusCode();
+                }
+            });
+            Assert.fail("Expected byteman rules to detect direct socket connections, status is:" + status);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertEquals("Not expecting Jetty to receive requests since we asked direct connections", 0, nbInJvmProxyRcvReqs.get());
+    }
 
 
     private int getNextAvailablePort(int initial) {
