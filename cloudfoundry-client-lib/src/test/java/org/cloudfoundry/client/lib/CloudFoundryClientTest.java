@@ -63,6 +63,8 @@ import org.cloudfoundry.client.lib.domain.InstanceStats;
 import org.cloudfoundry.client.lib.domain.InstancesInfo;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
+import org.cloudfoundry.client.lib.domain.ServiceInstanceLastOperation;
+import org.cloudfoundry.client.lib.domain.OperationState;
 import org.cloudfoundry.client.lib.oauth2.OauthClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerClient;
 import org.cloudfoundry.client.lib.rest.CloudControllerClientFactory;
@@ -1507,6 +1509,10 @@ public class CloudFoundryClientTest {
 		assertNotNull(serviceInstance.getType());
 		assertNotNull(serviceInstance.getCredentials());
 
+		ServiceInstanceLastOperation lastOperation = serviceInstance.getLastOperation();
+		assertNotNull(lastOperation);
+		assertEquals(OperationState.SUCCEEDED,lastOperation.getState());
+
 		CloudService service = serviceInstance.getService();
 		assertNotNull(service);
 		assertEquals(MYSQL_SERVICE_LABEL, service.getLabel());
@@ -1767,7 +1773,7 @@ public class CloudFoundryClientTest {
 		}
 		assertTrue(found);
 	}
-	
+
 	@Test
 	public void appsWithRoutesAreCounted() throws IOException {
 		String appName = namespacedAppName("my_route3");
