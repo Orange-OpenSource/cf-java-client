@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.cloudfoundry</groupId>
+	<groupId>com.orange.clara.cloudfoundry.client.lib</groupId>
 	<artifactId>cloudfoundry-client-lib</artifactId>
 	<version>1.1.4.BUILD-SNAPSHOT</version>
 	<packaging>jar</packaging>
@@ -20,9 +20,9 @@
 	</licenses>
 
 	<scm>
-		<url>http://github.com/cloudfoundry/cf-java-client</url>
-		<connection>scm:git:git@github.com/cloudfoundry/cf-java-client</connection>
-		<developerConnection>scm:git:git@github.com/cloudfoundry/cf-java-client</developerConnection>
+		<url>https://github.com/Orange-OpenSource/cf-java-client</url>
+		<connection>scm:git:https://github.com/Orange-OpenSource/cf-java-client.git</connection>
+		<developerConnection>scm:git:https://github.com/Orange-OpenSource/cf-java-client.git</developerConnection>
 	</scm>
 
 	<properties>
@@ -179,12 +179,6 @@
 
 		<profile>
 			<id>release-sign-artifacts</id>
-			<activation>
-				<property>
-					<name>performRelease</name>
-					<value>true</value>
-				</property>
-			</activation>
 			<build>
 				<plugins>
 					<plugin>
@@ -419,15 +413,10 @@
 	</build>
 
 	<distributionManagement>
-		<repository>
-			<id>sonatype-ossrh-staging</id>
-			<name>Sonatype OSSRH</name>
-			<url>http://oss.sonatype.org/service/local/staging/deploy/maven2</url>
-		</repository>
 		<snapshotRepository>
-			<id>spring-snapshot</id>
-			<name>Spring Snapshot Repository</name>
-			<url>s3://maven.springframework.org/snapshot</url>
+			<id>oss.snapshot.local</id>
+			<name>oss-snapshot-local repository</name>
+			<url>http://oss.jfrog.org/artifactory/oss-snapshot-local</url>
 		</snapshotRepository>
 	</distributionManagement>
 
