@@ -20,4 +20,32 @@
             <password>${env.BINTRAY_PASSWORD}</password>
         </server>
     </servers>
+    <profiles>
+        <profile>
+            <id>enable-jcenter-with-snapshots</id>
+            <repositories>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>jcenter</id>
+                    <name>JCenter-Bintray</name>
+                    <url>http://jcenter.bintray.com</url>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </pluginRepository>
+                <pluginRepository>
+                    <id>jfrog-oss-snapshots</id>
+                    <name>JFrog OSS Snapshots</name>
+                    <url>http://oss.jfrog.org/artifactory/oss-snapshot-local</url>
+                    <releases>
+                        <enabled>false</enabled>
+                    </releases>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>enable-jcenter-with-snapshots</activeProfile>
+    </activeProfiles>
 </settings>
