@@ -3,6 +3,11 @@ before_install:
   - ./bin/install-protoc-apt.sh
 before_script:
   - protoc --version
+install:
+-
+cache:
+  directories:
+    - '$HOME/.m2/repository'
 script:
   - "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && cd cloudfoundry-client-lib && mvn clean deploy --settings ../settings.xml || false"
 env:
