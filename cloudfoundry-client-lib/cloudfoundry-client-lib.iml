@@ -9,6 +9,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/test/resources" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/target/generated-sources" isTestSource="false" generated="true" />
+      <sourceFolder url="file://$MODULE_DIR$/target/generated-test-resources" type="java-test-resource" />
+      <excludeFolder url="file://$MODULE_DIR$/target/generated-test-resources" />
       <excludeFolder url="file://$MODULE_DIR$/target/maven-archiver" />
       <excludeFolder url="file://$MODULE_DIR$/target/maven-status" />
       <excludeFolder url="file://$MODULE_DIR$/target/surefire" />
@@ -67,7 +69,7 @@
     <orderEntry type="module-library">
       <library name="Maven: com.sun:tools:1.6">
         <CLASSES>
-          <root url="jar:///Library/Java/JavaVirtualMachines/jdk1.7.0_79.jdk/Contents/Home/lib/tools.jar!/" />
+          <root url="jar:///Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/lib/tools.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
