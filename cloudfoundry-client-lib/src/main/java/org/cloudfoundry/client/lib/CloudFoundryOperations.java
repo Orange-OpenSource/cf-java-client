@@ -182,6 +182,20 @@ public interface CloudFoundryOperations {
     void bindStagingSecurityGroup(String securityGroupName);
 
     /**
+     * Check if user can use the service
+     * @param service     cloud service info
+     * @return boolean
+     */
+    boolean checkUserPermission(CloudService service);
+
+    /**
+     * Check if user can use the service
+     * @param guid     cloud service guid
+     * @return boolean
+     */
+    boolean checkUserPermission(String guid);
+
+    /**
      * Create application.
      *
      * @param appName      application name

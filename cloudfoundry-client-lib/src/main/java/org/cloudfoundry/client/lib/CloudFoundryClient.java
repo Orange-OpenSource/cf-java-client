@@ -243,6 +243,16 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         cc.bindStagingSecurityGroup(securityGroupName);
     }
 
+    @Override
+    public boolean checkUserPermission(CloudService service) {
+        return cc.checkUserPermission(service);
+    }
+
+    @Override
+    public boolean checkUserPermission(String guid) {
+        return cc.checkUserPermission(guid);
+    }
+
     public void createApplication(String appName, Staging staging, Integer memory, List<String> uris,
                                   List<String> serviceNames) {
         cc.createApplication(appName, staging, memory, uris, serviceNames);

@@ -260,6 +260,21 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public boolean checkUserPermission(CloudService service) {
+        return this.checkUserPermission(service.getMeta().getGuid().toString());
+    }
+
+    @Override
+    public boolean checkUserPermission(String guid) {
+        String path = "/v2/service_instances/{serviceInstanceGuid}/permissions";
+        Map<String, Object> pathVariables = new HashMap<String, Object>();
+        pathVariables.put("serviceInstanceGuid", guid);
+        String resp = getRestTemplate().getForObject(getUrl(path), String.class, pathVariables);
+        Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
+        return (Boolean) respMap.get("manage");
+    }
+
+    @Override
     public void createApplication(String appName, Staging staging, Integer memory, List<String> uris,
                                   List<String> serviceNames) {
         createApplication(appName, staging, null, memory, uris, serviceNames);

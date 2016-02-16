@@ -632,6 +632,20 @@ public class CloudFoundryClientTest {
     }
 
     @Test
+    public void checkUserPermission() {
+        List<CloudService> expectedServices = Arrays.asList(
+                createMySqlService("mysql-test")
+        );
+        List<CloudService> services = connectedClient.getServices();
+        assertNotNull(services);
+        assertEquals(1, services.size());
+        assertTrue(connectedClient.checkUserPermission(services.get(0)));
+        for (CloudService expectedService : expectedServices) {
+            assertServiceMatching(expectedService, services);
+        }
+    }
+
+    @Test
     public void createAndReCreateApplication() {
         String appName = createSpringTravelApp("A");
         assertEquals(1, connectedClient.getApplications().size());
@@ -812,6 +826,10 @@ public class CloudFoundryClientTest {
         assertNotNull(connectedClient.getDefaultDomain());
     }
 
+    //
+    // App configuration tests
+    //
+
     @Test
     public void deleteApplication() {
         String appName = createSpringTravelApp("4");
@@ -819,10 +837,6 @@ public class CloudFoundryClientTest {
         connectedClient.deleteApplication(appName);
         assertEquals(0, connectedClient.getApplications().size());
     }
-
-    //
-    // App configuration tests
-    //
 
     @Test
     public void deleteOrphanedRoutes() {
@@ -944,6 +958,11 @@ public class CloudFoundryClientTest {
         connectedClient.getApplication(appName);
     }
 
+
+    //
+    // Advanced Application tests
+    //
+
     @Test
     public void getApplicationStats() throws Exception {
         final int instanceCount = 3;
@@ -979,11 +998,6 @@ public class CloudFoundryClientTest {
             assertTimeWithinRange("Usage time should be very recent", usage.getTime().getTime(), FIVE_MINUTES);
         }
     }
-
-
-    //
-    // Advanced Application tests
-    //
 
     @Test
     public void getApplicationStatsStoppedApp() throws IOException {

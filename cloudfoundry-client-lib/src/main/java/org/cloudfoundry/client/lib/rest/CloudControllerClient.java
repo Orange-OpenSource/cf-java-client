@@ -106,6 +106,10 @@ public interface CloudControllerClient {
 
     void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
 
+    boolean checkUserPermission(CloudService service);
+
+    boolean checkUserPermission(String guid);
+
     void debugApplication(String appName, CloudApplication.DebugMode mode);
 
     void deleteAllApplications();
