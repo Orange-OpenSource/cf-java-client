@@ -30,6 +30,7 @@ import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
@@ -183,14 +184,16 @@ public interface CloudFoundryOperations {
 
     /**
      * Check if user can use the service
-     * @param service     cloud service info
+     *
+     * @param service cloud service info
      * @return boolean
      */
     boolean checkUserPermission(CloudService service);
 
     /**
      * Check if user can use the service
-     * @param guid     cloud service guid
+     *
+     * @param guid cloud service guid
      * @return boolean
      */
     boolean checkUserPermission(String guid);
@@ -276,6 +279,45 @@ public interface CloudFoundryOperations {
      * @param serviceBroker cloud service broker info
      */
     void createServiceBroker(CloudServiceBroker serviceBroker);
+
+    /**
+     * Create a service key with service instance guid
+     *
+     * @param guid service instance guid
+     * @param name service key name
+     * @return the cloud service key
+     */
+    CloudServiceKey createServiceKey(String guid, String name);
+
+    /**
+     * Create a service key with cloud service object
+     *
+     * @param cloudService cloud service object
+     * @param name         service key name
+     * @return the cloud service key
+     */
+    CloudServiceKey createServiceKey(CloudService cloudService, String name);
+
+    /**
+     * Create a service key with service instance guid and with parameters inside service instance
+     *
+     * @param guid       service instance guid
+     * @param name       service key name
+     * @param parameters parameters to pass to service instance
+     * @return the cloud service key
+     */
+    CloudServiceKey createServiceKey(String guid, String name, Map<String, Object> parameters);
+
+    /**
+     * Create a service key with cloud service instance object and with parameters inside service
+     *
+     * @param cloudService cloud service object
+     * @param name         service key name
+     * @param parameters   parameters to pass to service instance
+     * @return the cloud service key
+     */
+    CloudServiceKey createServiceKey(CloudService cloudService, String name, Map<String, Object>
+            parameters);
 
     /**
      * Create a space with the specified name
@@ -375,6 +417,21 @@ public interface CloudFoundryOperations {
      * @param name the service broker name
      */
     void deleteServiceBroker(String name);
+
+    /**
+     * Delete a service key by passing his guid
+     *
+     * @param guid service key guid
+     */
+    void deleteServiceKey(String guid);
+
+
+    /**
+     * Delete a service key by passing a cloud service key object
+     *
+     * @param cloudServiceKey cloud service key object
+     */
+    void deleteServiceKey(CloudServiceKey cloudServiceKey);
 
     /**
      * Delete a space with the specified name
@@ -690,6 +747,21 @@ public interface CloudFoundryOperations {
      * @return the service instance info
      */
     CloudServiceInstance getServiceInstance(String service);
+
+    /**
+     * Get a service key by passing his guid
+     *
+     * @param guid service key guid
+     * @return a cloud service key
+     */
+    CloudServiceKey getServiceKey(String guid);
+
+    /**
+     * Retrieve all service keys
+     *
+     * @return list of cloud service keys
+     */
+    List<CloudServiceKey> getServiceKeys();
 
     /**
      * Get all service offerings.

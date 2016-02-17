@@ -47,6 +47,7 @@ import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
@@ -368,6 +369,46 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     }
 
     @Override
+    public CloudServiceKey createServiceKey(String guid, String name) {
+        return this.createServiceKey(guid, name, null);
+    }
+
+    @Override
+    public CloudServiceKey createServiceKey(CloudService cloudService, String name) {
+        assertSpaceProvided("create service key");
+        Assert.notNull(cloudService.getMeta().getGuid(), "Service guid must not be null");
+        return this.createServiceKey(cloudService.getMeta().getGuid().toString(), name, null);
+    }
+
+    @Override
+    public CloudServiceKey createServiceKey(String guid, String name, Map<String, Object> parameters) {
+        assertSpaceProvided("create service key");
+        Assert.notNull(guid, "Service instance guid must not be null");
+        Assert.notNull(name, "Service key name must not be null");
+
+
+        HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
+        serviceRequest.put("service_instance_guid", guid);
+        serviceRequest.put("name", name);
+        if (parameters != null) {
+            serviceRequest.put("parameters", parameters);
+        }
+        String resp = getRestTemplate().postForObject(getUrl("/v2/service_keys"), serviceRequest, String.class);
+        Map<String, Object> resource = JsonUtil.convertJsonToMap(resp);
+        CloudServiceKey cloudServiceKey = resourceMapper.mapResource(resource, CloudServiceKey.class);
+        this.fillServiceInServiceKey(cloudServiceKey, resource);
+        return cloudServiceKey;
+    }
+
+    @Override
+    public CloudServiceKey createServiceKey(CloudService cloudService, String name, Map<String,
+            Object> parameters) {
+        assertSpaceProvided("create service key");
+        Assert.notNull(cloudService.getMeta().getGuid(), "Service instance guid must not be null");
+        return this.createServiceKey(cloudService.getMeta().getGuid().toString(), name, parameters);
+    }
+
+    @Override
     public void createSpace(String spaceName) {
         assertSpaceProvided("create a new space");
         UUID orgGuid = sessionSpace.getOrganization().getMeta().getGuid();
@@ -492,6 +533,18 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         Assert.notNull(existingBroker, "Cannot update broker if it does not first exist");
 
         getRestTemplate().delete(getUrl("/v2/service_brokers/{guid}"), existingBroker.getMeta().getGuid());
+    }
+
+    @Override
+    public void deleteServiceKey(String guid) {
+        CloudServiceKey cloudServiceKey = getServiceKey(guid);
+        this.deleteServiceKey(cloudServiceKey);
+    }
+
+    @Override
+    public void deleteServiceKey(CloudServiceKey cloudServiceKey) {
+        Assert.notNull(cloudServiceKey, "Cannot delete service key if it does not first exist");
+        getRestTemplate().delete(getUrl("/v2/service_keys/{guid}"), cloudServiceKey.getMeta().getGuid());
     }
 
     @Override
@@ -890,6 +943,34 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         }
 
         return resourceMapper.mapResource(resource, CloudServiceInstance.class);
+    }
+
+    @Override
+    public CloudServiceKey getServiceKey(String guid) {
+        String urlPath = "/v2/service_keys/{guid}";
+        Map<String, Object> urlVars = new HashMap<>();
+        urlVars.put("guid", guid);
+        String resp = getRestTemplate().getForObject(getUrl(urlPath), String.class, urlVars);
+        Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
+        CloudServiceKey cloudServiceKey = null;
+        if (respMap != null && !respMap.isEmpty()) {
+            cloudServiceKey = resourceMapper.mapResource(respMap, CloudServiceKey.class);
+            this.fillServiceInServiceKey(cloudServiceKey, respMap);
+        }
+        return cloudServiceKey;
+    }
+
+    @Override
+    public List<CloudServiceKey> getServiceKeys() {
+        List<Map<String, Object>> resourceList = getAllResources("/v2/service_keys", null);
+        List<CloudServiceKey> serviceKeys = new ArrayList<CloudServiceKey>();
+        CloudServiceKey cloudServiceKey;
+        for (Map<String, Object> resource : resourceList) {
+            cloudServiceKey = resourceMapper.mapResource(resource, CloudServiceKey.class);
+            this.fillServiceInServiceKey(cloudServiceKey, resource);
+            serviceKeys.add(cloudServiceKey);
+        }
+        return serviceKeys;
     }
 
     @Override
@@ -2095,6 +2176,17 @@ public class CloudControllerClientImpl implements CloudControllerClient {
             // no way to proceed
             return;
         }
+    }
+
+    private void fillServiceInServiceKey(CloudServiceKey cloudServiceKey, Map<String, Object> params) {
+        Map<String, Object> entityParams = (Map<String, Object>) params.get("entity");
+        String resp = getRestTemplate().getForObject(getUrl((String) entityParams.get("service_instance_url")),
+                String.class);
+        Map<String, Object> respMap = JsonUtil.convertJsonToMap(resp);
+        if (respMap == null || respMap.isEmpty()) {
+            return;
+        }
+        cloudServiceKey.setService(resourceMapper.mapResource(respMap, CloudService.class));
     }
 
     private Map<String, Object> findApplicationResource(UUID appGuid, boolean fetchServiceInfo) {

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.orange.clara.cloudfoundry.client.lib</groupId>
     <artifactId>cloudfoundry-client-lib</artifactId>
-    <version>1.1.4.ORANGEv20-SNAPSHOT</version>
+    <version>1.1.5.ORANGEv21</version>
     <packaging>jar</packaging>
     <name>Cloud Foundry Java Client Library</name>
     <description>A Cloud Foundry client library for Java</description>
@@ -470,5 +470,22 @@
             <email>sfrederick at gopivotal.com</email>
         </developer>
     </developers>
-
+    <pluginRepositories>
+        <pluginRepository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>bintray-plugins</name>
+            <url>http://jcenter.bintray.com</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>jfrog-oss-snapshots</id>
+            <name>JFrog OSS Snapshots</name>
+            <url>http://oss.jfrog.org/artifactory/oss-snapshot-local</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
 </project>

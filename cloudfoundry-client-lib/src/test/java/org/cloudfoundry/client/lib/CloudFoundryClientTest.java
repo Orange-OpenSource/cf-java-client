@@ -16,6 +16,7 @@ import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
@@ -55,6 +56,7 @@ import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
+import org.junit.runners.model.MultipleFailureException;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -194,6 +196,18 @@ public class CloudFoundryClientTest {
         private long startTime;
 
         @Override
+        protected void failed(Throwable e, Description description) {
+            System.out.println("Test failed: " + description.getMethodName() + " - error: " + e.getMessage());
+            if (e instanceof MultipleFailureException) {
+                for (Throwable se : ((MultipleFailureException) e).getFailures()) {
+                    se.printStackTrace();
+                }
+            } else {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
         protected void finished(Description description) {
             if (!SILENT_TEST_TIMINGS) {
                 System.out.println("Test " + description.getMethodName() + " took " + (System.currentTimeMillis() -
@@ -207,6 +221,11 @@ public class CloudFoundryClientTest {
                 System.out.println("Starting test " + description.getMethodName());
             }
             startTime = System.currentTimeMillis();
+        }
+
+        @Override
+        protected void succeeded(Description description) {
+            System.out.println("Test succeeded: " + description.getMethodName());
         }
     };
 
@@ -781,6 +800,18 @@ public class CloudFoundryClientTest {
 
     }
 
+    /*
+    Test service keys
+     */
+    @Test
+    public void createServiceKey() {
+        String serviceKeyName = "test_database_key";
+        CloudServiceKey cloudServiceKey = this.createServiceKeyMySqlService("mysql-test", serviceKeyName);
+        assertNotNull(cloudServiceKey);
+        assertNotNull(cloudServiceKey.getName());
+        assertNotNull(cloudServiceKey.getService());
+    }
+
     @Test
     public void crudSecurityGroups() throws Exception {
         assumeTrue(CCNG_USER_IS_ADMIN);
@@ -826,10 +857,6 @@ public class CloudFoundryClientTest {
         assertNotNull(connectedClient.getDefaultDomain());
     }
 
-    //
-    // App configuration tests
-    //
-
     @Test
     public void deleteApplication() {
         String appName = createSpringTravelApp("4");
@@ -837,6 +864,10 @@ public class CloudFoundryClientTest {
         connectedClient.deleteApplication(appName);
         assertEquals(0, connectedClient.getApplications().size());
     }
+
+    //
+    // App configuration tests
+    //
 
     @Test
     public void deleteOrphanedRoutes() {
@@ -859,6 +890,15 @@ public class CloudFoundryClientTest {
             }
         }
         assertTrue(found);
+    }
+
+    public void deleteServiceKey() {
+        String serviceKeyName = "test_database_key";
+        CloudServiceKey cloudServiceKey = this.createServiceKeyMySqlService("mysql-test", serviceKeyName);
+        assertEquals(1, connectedClient.getServiceKeys().size());
+        connectedClient.deleteServiceKey(serviceKeyName);
+        assertEquals(0, connectedClient.getServiceKeys().size());
+        this.deleteServiceKeyMySqlService(cloudServiceKey);
     }
 
     @Test
@@ -1228,6 +1268,31 @@ public class CloudFoundryClientTest {
         assertNotNull(binding.getBindingOptions());
         assertEquals(0, binding.getBindingOptions().size());
         assertNull(binding.getSyslogDrainUrl());
+    }
+
+    @Test
+    public void getServiceKey() {
+        String serviceKeyName = "test_database_key";
+
+        CloudServiceKey expectedServiceKey = createServiceKeyMySqlService("mysql-test", serviceKeyName);
+        CloudServiceKey serviceKey = connectedClient.getServiceKey(expectedServiceKey.getMeta().getGuid().toString());
+
+        assertNotNull(serviceKey);
+        assertServiceKeysEqual(expectedServiceKey, serviceKey);
+    }
+
+    public void getServiceKeys() {
+        List<CloudServiceKey> expectedServices = Arrays.asList(
+                createServiceKeyMySqlService("mysql-test", "test_database_key1"),
+                createServiceKeyMySqlService("mysql-test", "test_database_key2"),
+                createServiceKeyMySqlService("mysql-test", "test_database_key3")
+        );
+        List<CloudServiceKey> serviceKeys = connectedClient.getServiceKeys();
+        assertNotNull(serviceKeys);
+        assertEquals(3, serviceKeys.size());
+        for (CloudServiceKey expectedServiceKey : expectedServices) {
+            assertServiceKeyMatching(expectedServiceKey, serviceKeys);
+        }
     }
 
     @Test
@@ -1796,6 +1861,9 @@ public class CloudFoundryClientTest {
         // Clean after ourselves so that there are no leftover apps, services, domains, and routes
         if (connectedClient != null) { //may happen if setUp() fails
             connectedClient.deleteAllApplications();
+            for (CloudServiceKey cloudServiceKey : this.connectedClient.getServiceKeys()) {
+                this.connectedClient.deleteServiceKey(cloudServiceKey);
+            }
             connectedClient.deleteAllServices();
             clearTestDomainAndRoutes();
             deleteAnyOrphanedTestSecurityGroups();
@@ -2172,6 +2240,21 @@ public class CloudFoundryClientTest {
         assertNull(rule.getCode());
     }
 
+    private void assertServiceKeyMatching(CloudServiceKey expectedServiceKey, List<CloudServiceKey> serviceKeys) {
+        for (CloudServiceKey serviceKey : serviceKeys) {
+            if (serviceKey.getName().equals(expectedServiceKey.getName())) {
+                assertServiceKeysEqual(expectedServiceKey, serviceKey);
+                return;
+            }
+        }
+        fail("No service key found matching " + expectedServiceKey.getName());
+    }
+
+    private void assertServiceKeysEqual(CloudServiceKey expectedServiceKey, CloudServiceKey serviceKey) {
+        assertEquals(expectedServiceKey.getName(), serviceKey.getName());
+        assertServicesEqual(expectedServiceKey.getService(), serviceKey.getService());
+    }
+
     private void assertServiceMatching(CloudService expectedService, List<CloudService> services) {
         for (CloudService service : services) {
             if (service.getName().equals(expectedService.getName())) {
@@ -2298,17 +2381,23 @@ public class CloudFoundryClientTest {
         return service;
     }
 
+    private CloudServiceKey createServiceKeyMySqlService(String serviceName, String serviceKeyName) {
+        CloudService service = createMySqlService(serviceName);
+        service = connectedClient.getService(service.getName());
+        return connectedClient.createServiceKey(service, serviceKeyName);
+    }
+
     private void createSpringApplication(String appName) {
         createTestApp(appName, null, new Staging());
+    }
+
+    private void createSpringApplication(String appName, List<String> serviceNames) {
+        createTestApp(appName, serviceNames, new Staging());
     }
 
     //
     // helper methods
     //
-
-    private void createSpringApplication(String appName, List<String> serviceNames) {
-        createTestApp(appName, serviceNames, new Staging());
-    }
 
     private void createSpringApplication(String appName, String buildpackUrl) {
         createTestApp(appName, null, new Staging(null, buildpackUrl));
@@ -2375,6 +2464,14 @@ public class CloudFoundryClientTest {
         } catch (Exception e) {
             // Nothing we can do at this point except protect other teardown logic from not running
         }
+    }
+
+    private void deleteServiceKeyMySqlService(String serviceKeyName) {
+        this.connectedClient.deleteServiceKey(serviceKeyName);
+    }
+
+    private void deleteServiceKeyMySqlService(CloudServiceKey cloudServiceKey) {
+        this.connectedClient.deleteServiceKey(cloudServiceKey);
     }
 
     private void doGetFile(CloudFoundryOperations client, String appName) throws Exception {

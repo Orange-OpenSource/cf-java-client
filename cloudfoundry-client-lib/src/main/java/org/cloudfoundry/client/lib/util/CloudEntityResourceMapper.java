@@ -29,6 +29,7 @@ import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
@@ -181,6 +182,9 @@ public class CloudEntityResourceMapper {
         }
         if (targetClass == CloudUser.class) {
             return (T) mapUserResource(resource);
+        }
+        if (targetClass == CloudServiceKey.class) {
+            return (T) mapServiceKeyResource(resource);
         }
         throw new IllegalArgumentException(
                 "Error during mapping - unsupported class for entity mapping " + targetClass.getName());
@@ -373,6 +377,14 @@ public class CloudEntityResourceMapper {
         serviceInstance.setBindings(bindings);
 
         return serviceInstance;
+    }
+
+    private CloudServiceKey mapServiceKeyResource(Map<String, Object> resource) {
+        CloudServiceKey serviceKey = new CloudServiceKey(getMeta(resource), getNameOfResource(resource));
+
+        serviceKey.setCredentials(getEntityAttribute(resource, "credentials", Map.class));
+
+        return serviceKey;
     }
 
     private CloudServiceOffering mapServiceOfferingResource(Map<String, Object> resource) {

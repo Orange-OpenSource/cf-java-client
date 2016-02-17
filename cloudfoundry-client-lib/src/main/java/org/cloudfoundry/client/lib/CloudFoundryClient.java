@@ -31,6 +31,7 @@ import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
@@ -286,6 +287,27 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     }
 
     @Override
+    public CloudServiceKey createServiceKey(String guid, String name) {
+        return this.cc.createServiceKey(guid, name);
+    }
+
+    @Override
+    public CloudServiceKey createServiceKey(CloudService cloudService, String name) {
+        return this.cc.createServiceKey(cloudService, name);
+    }
+
+    @Override
+    public CloudServiceKey createServiceKey(String guid, String name, Map<String, Object> parameters) {
+        return this.cc.createServiceKey(guid, name, parameters);
+    }
+
+    @Override
+    public CloudServiceKey createServiceKey(CloudService cloudService, String name, Map<String,
+            Object> parameters) {
+        return this.cc.createServiceKey(cloudService, name, parameters);
+    }
+
+    @Override
     public void createSpace(String spaceName) {
         cc.createSpace(spaceName);
     }
@@ -344,6 +366,16 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     @Override
     public void deleteServiceBroker(String name) {
         cc.deleteServiceBroker(name);
+    }
+
+    @Override
+    public void deleteServiceKey(String guid) {
+        this.cc.deleteServiceKey(guid);
+    }
+
+    @Override
+    public void deleteServiceKey(CloudServiceKey cloudServiceKey) {
+        this.cc.deleteServiceKey(cloudServiceKey);
     }
 
     @Override
@@ -520,6 +552,16 @@ public class CloudFoundryClient implements CloudFoundryOperations {
 
     public CloudServiceInstance getServiceInstance(String service) {
         return cc.getServiceInstance(service);
+    }
+
+    @Override
+    public CloudServiceKey getServiceKey(String guid) {
+        return this.cc.getServiceKey(guid);
+    }
+
+    @Override
+    public List<CloudServiceKey> getServiceKeys() {
+        return this.cc.getServiceKeys();
     }
 
     public List<CloudServiceOffering> getServiceOfferings() {

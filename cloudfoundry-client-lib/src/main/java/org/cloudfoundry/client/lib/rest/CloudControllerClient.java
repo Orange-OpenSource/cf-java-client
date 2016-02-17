@@ -37,6 +37,7 @@ import org.cloudfoundry.client.lib.domain.CloudSecurityGroup;
 import org.cloudfoundry.client.lib.domain.CloudService;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
+import org.cloudfoundry.client.lib.domain.CloudServiceKey;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
@@ -82,13 +83,17 @@ public interface CloudControllerClient {
 
     void bindStagingSecurityGroup(String securityGroupName);
 
+    boolean checkUserPermission(CloudService service);
+
+    boolean checkUserPermission(String guid);
+
+    // Service methods
+
     void createApplication(String appName, Staging staging, Integer memory, List<String> uris,
                            List<String> serviceNames);
 
     void createApplication(String appName, Staging staging, Integer disk, Integer memory,
                            List<String> uris, List<String> serviceNames);
-
-    // Service methods
 
     void createQuota(CloudQuota quota);
 
@@ -100,21 +105,28 @@ public interface CloudControllerClient {
 
     void createServiceBroker(CloudServiceBroker serviceBroker);
 
+    CloudServiceKey createServiceKey(String guid, String name);
+
+    CloudServiceKey createServiceKey(CloudService cloudService, String name);
+
+    CloudServiceKey createServiceKey(String guid, String name, Map<String, Object> parameters);
+
+    CloudServiceKey createServiceKey(CloudService cloudService, String name, Map<String, Object>
+            parameters);
+
     void createSpace(String spaceName);
 
     void createUserProvidedService(CloudService service, Map<String, Object> credentials);
 
     void createUserProvidedService(CloudService service, Map<String, Object> credentials, String syslogDrainUrl);
 
-    boolean checkUserPermission(CloudService service);
-
-    boolean checkUserPermission(String guid);
-
     void debugApplication(String appName, CloudApplication.DebugMode mode);
 
     void deleteAllApplications();
 
     void deleteAllServices();
+
+    // Service key
 
     void deleteApplication(String appName);
 
@@ -124,8 +136,6 @@ public interface CloudControllerClient {
 
     void deleteQuota(String quotaName);
 
-    // App methods
-
     void deleteRoute(String host, String domainName);
 
     void deleteSecurityGroup(String securityGroupName);
@@ -133,6 +143,12 @@ public interface CloudControllerClient {
     void deleteService(String service);
 
     void deleteServiceBroker(String name);
+
+    // App methods
+
+    void deleteServiceKey(String guid);
+
+    void deleteServiceKey(CloudServiceKey cloudServiceKey);
 
     void deleteSpace(String spaceName);
 
@@ -204,6 +220,10 @@ public interface CloudControllerClient {
     List<CloudServiceBroker> getServiceBrokers();
 
     CloudServiceInstance getServiceInstance(String serviceName);
+
+    CloudServiceKey getServiceKey(String guid);
+
+    List<CloudServiceKey> getServiceKeys();
 
     List<CloudServiceOffering> getServiceOfferings();
 
