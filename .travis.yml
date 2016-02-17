@@ -10,6 +10,7 @@ cache:
     - '$HOME/.m2/repository'
 script:
   - "[ ${TRAVIS_PULL_REQUEST} = 'false' ] && cd cloudfoundry-client-lib && mvn clean deploy --settings ../settings.xml || false"
+  - cloudfoundry-client-lib/bin/orange-release.sh
 env:
   global:
   - secure: BorcRoEOlB8vPk+AojKwRM7z/DtZ11xKYBwyxRE0F59xCzFFtEKaKk91jFMfIgpcScmckrmSjhx4H0Gsz+BSQlcOtdYf75XYNwQaRcP/i6w84H1k6in9jI4xx6IALN6a1P8D+caHG30rwX6d4ebQ5tH9RDhghP9UuoSz6fY2vwM=
