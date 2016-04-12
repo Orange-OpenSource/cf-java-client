@@ -266,13 +266,12 @@ public class CloudEntityResourceMapper {
                 getEntityAttribute(resource, "staging_default", Boolean.class));
     }
 
-    private CloudServiceLastOperation mapCloudServiceLastOperation(Map<String, Object> serviceOperationResource) {
+    private CloudServiceLastOperation mapCloudServiceLastOperation(Map<String, Object> serviceOperation) {
         CloudServiceLastOperation cloudServiceLastOperation = new CloudServiceLastOperation();
-        cloudServiceLastOperation.setState(getEntityAttribute(serviceOperationResource, "state", String.class));
-        cloudServiceLastOperation.setDescription(getEntityAttribute(serviceOperationResource, "description", String
-                .class));
-        cloudServiceLastOperation.setType(OperationType.valueOf(getEntityAttribute(serviceOperationResource, "type",
-                String.class).toUpperCase()));
+        cloudServiceLastOperation.setState(serviceOperation.get("state").toString());
+        cloudServiceLastOperation.setDescription(serviceOperation.get("description").toString());
+        cloudServiceLastOperation.setType(OperationType.valueOf(serviceOperation.get("type").toString
+                ().toUpperCase()));
         return cloudServiceLastOperation;
     }
 
