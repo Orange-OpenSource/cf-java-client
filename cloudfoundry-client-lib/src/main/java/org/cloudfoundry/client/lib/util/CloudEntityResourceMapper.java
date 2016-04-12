@@ -30,11 +30,13 @@ import org.cloudfoundry.client.lib.domain.CloudServiceBinding;
 import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
 import org.cloudfoundry.client.lib.domain.CloudServiceInstance;
 import org.cloudfoundry.client.lib.domain.CloudServiceKey;
+import org.cloudfoundry.client.lib.domain.CloudServiceLastOperation;
 import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import org.cloudfoundry.client.lib.domain.CloudServicePlan;
 import org.cloudfoundry.client.lib.domain.CloudSpace;
 import org.cloudfoundry.client.lib.domain.CloudStack;
 import org.cloudfoundry.client.lib.domain.CloudUser;
+import org.cloudfoundry.client.lib.domain.OperationType;
 import org.cloudfoundry.client.lib.domain.SecurityGroupRule;
 import org.cloudfoundry.client.lib.domain.Staging;
 
@@ -186,6 +188,9 @@ public class CloudEntityResourceMapper {
         if (targetClass == CloudServiceKey.class) {
             return (T) mapServiceKeyResource(resource);
         }
+        if (targetClass == CloudServiceLastOperation.class) {
+            return (T) mapCloudServiceLastOperation(resource);
+        }
         throw new IllegalArgumentException(
                 "Error during mapping - unsupported class for entity mapping " + targetClass.getName());
     }
@@ -259,6 +264,16 @@ public class CloudEntityResourceMapper {
                 getSecurityGroupRules(resource),
                 getEntityAttribute(resource, "running_default", Boolean.class),
                 getEntityAttribute(resource, "staging_default", Boolean.class));
+    }
+
+    private CloudServiceLastOperation mapCloudServiceLastOperation(Map<String, Object> serviceOperationResource) {
+        CloudServiceLastOperation cloudServiceLastOperation = new CloudServiceLastOperation();
+        cloudServiceLastOperation.setState(getEntityAttribute(serviceOperationResource, "state", String.class));
+        cloudServiceLastOperation.setDescription(getEntityAttribute(serviceOperationResource, "description", String
+                .class));
+        cloudServiceLastOperation.setType(OperationType.valueOf(getEntityAttribute(serviceOperationResource, "type",
+                String.class).toUpperCase()));
+        return cloudServiceLastOperation;
     }
 
     private CloudDomain mapDomainResource(Map<String, Object> resource) {
@@ -427,6 +442,10 @@ public class CloudEntityResourceMapper {
 
     private CloudService mapServiceResource(Map<String, Object> resource) {
         CloudService cloudService = new CloudService(getMeta(resource), getNameOfResource(resource));
+        Map<String, Object> serviceLastOperationResource = getEmbeddedResource(resource, "last_operation");
+        if (serviceLastOperationResource != null) {
+            cloudService.setCloudServiceLastOperation(this.mapCloudServiceLastOperation(serviceLastOperationResource));
+        }
         Map<String, Object> servicePlanResource = getEmbeddedResource(resource, "service_plan");
         if (servicePlanResource != null) {
             cloudService.setPlan(getEntityAttribute(servicePlanResource, "name", String.class));

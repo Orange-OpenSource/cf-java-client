@@ -24,6 +24,8 @@ package org.cloudfoundry.client.lib.domain;
  */
 public class CloudService extends CloudEntity {
 
+    private CloudServiceLastOperation cloudServiceLastOperation;
+
     private String label;
 
     private String plan;
@@ -38,6 +40,14 @@ public class CloudService extends CloudEntity {
 
     public CloudService(Meta meta, String name) {
         super(meta, name);
+    }
+
+    public CloudServiceLastOperation getCloudServiceLastOperation() {
+        return cloudServiceLastOperation;
+    }
+
+    public void setCloudServiceLastOperation(CloudServiceLastOperation cloudServiceLastOperation) {
+        this.cloudServiceLastOperation = cloudServiceLastOperation;
     }
 
     public String getLabel() {

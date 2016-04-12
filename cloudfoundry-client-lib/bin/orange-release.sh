@@ -20,7 +20,7 @@ then
 	echo "TAG_NAME: $TRAVIS_TAG"
 	echo "Extracted Travis repo name: $REPO_NAME"
 
-	JFROG_PROMOTION_URL=http://oss.jfrog.org/api/plugins/build/promote/snapshotsToBintray/$REPO_NAME/${TRAVIS_BUILD_NUMBER}
+	JFROG_PROMOTION_URL=http://oss.jfrog.org/api/plugins/build/promote/snapshotsToBintray/cloudfoundry-client-lib/${TRAVIS_BUILD_NUMBER}
 	echo "Promotion URL to use: $JFROG_PROMOTION_URL"
 	curl --silent -X POST -u ${BINTRAY_USER}:${BINTRAY_PASSWORD} $JFROG_PROMOTION_URL
 fi
