@@ -103,6 +103,8 @@ public interface CloudControllerClient {
 
     void createService(CloudService service);
 
+    void createService(CloudService service, Map<String, Object> parameters);
+
     void createServiceBroker(CloudServiceBroker serviceBroker);
 
     CloudServiceKey createServiceKey(String guid, String name);
@@ -322,6 +324,12 @@ public interface CloudControllerClient {
     void updateSecurityGroup(CloudSecurityGroup securityGroup);
 
     void updateSecurityGroup(String name, InputStream jsonRulesFile);
+
+    void updateService(CloudService previousService, CloudService updatedService, Map<String, Object> parameters);
+
+    void updateService(CloudService service, Map<String, Object> parameters);
+
+    void updateService(CloudService previousService, CloudService updatedService);
 
     void updateServiceBroker(CloudServiceBroker serviceBroker);
 

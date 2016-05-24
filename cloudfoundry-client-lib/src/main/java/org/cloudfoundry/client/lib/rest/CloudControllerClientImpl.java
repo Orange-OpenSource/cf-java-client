@@ -337,6 +337,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
 
     @Override
     public void createService(CloudService service) {
+        this.createService(service, null);
+    }
+
+    @Override
+    public void createService(CloudService service, Map<String, Object> parameters) {
         assertSpaceProvided("create service");
         Assert.notNull(service, "Service must not be null");
         Assert.notNull(service.getName(), "Service name must not be null");
@@ -349,7 +354,11 @@ public class CloudControllerClientImpl implements CloudControllerClient {
         serviceRequest.put("space_guid", sessionSpace.getMeta().getGuid());
         serviceRequest.put("name", service.getName());
         serviceRequest.put("service_plan_guid", cloudServicePlan.getMeta().getGuid());
-        getRestTemplate().postForObject(getUrl("/v2/service_instances?accepts_incomplete=true"), serviceRequest, String.class);
+        if (parameters != null && !parameters.isEmpty()) {
+            serviceRequest.put("parameters", parameters);
+        }
+        getRestTemplate().postForObject(getUrl("/v2/service_instances?accepts_incomplete=true"), serviceRequest,
+                String.class);
     }
 
     @Override
@@ -1477,6 +1486,52 @@ public class CloudControllerClientImpl implements CloudControllerClient {
     public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
         CloudSecurityGroup oldGroup = doGetSecurityGroup(name, true);
         doUpdateSecurityGroup(oldGroup, name, JsonUtil.convertToJsonList(jsonRulesFile));
+    }
+
+    @Override
+    public void updateService(CloudService previousService, CloudService updatedService, Map<String, Object>
+            parameters) {
+        assertSpaceProvided("create service");
+        Assert.notNull(previousService, "Prevous Service must not be null");
+        Assert.notNull(previousService.getMeta().getGuid(), "Prevous Service UUID must not be null");
+        Assert.notNull(previousService.getPlan(), "Service plan for previous service must not be null");
+        CloudServicePlan previousCloudServicePlan = findPlanForService(previousService);
+        UUID finalPlanId = previousCloudServicePlan.getMeta().getGuid();
+        if (updatedService != null) {
+            Assert.notNull(updatedService.getLabel(), "Service label for updated service must not be null");
+            Assert.notNull(updatedService.getPlan(), "Service plan for updated service must not be null");
+            CloudServicePlan newCloudServicePlan = findPlanForService(updatedService);
+            finalPlanId = newCloudServicePlan.getMeta().getGuid();
+        }
+        HashMap<String, Object> serviceRequest = new HashMap<String, Object>();
+
+        HashMap<String, Object> previousValues = new HashMap<String, Object>();
+        previousValues.put("plan_id", previousCloudServicePlan.getMeta().getGuid());
+        previousValues.put("organization_id", this.sessionSpace.getOrganization().getMeta().getGuid());
+        previousValues.put("space_id", this.sessionSpace.getMeta().getGuid());
+
+        serviceRequest.put("previous_values", previousValues);
+
+        serviceRequest.put("plan_id", finalPlanId);
+
+        if (parameters != null && !parameters.isEmpty()) {
+            serviceRequest.put("parameters", parameters);
+        }
+        HttpEntity<Map> requestEntity = new HttpEntity<Map>(serviceRequest);
+        getRestTemplate().exchange(getUrl("/v2/service_instances/{guid}?accepts_incomplete=true"), HttpMethod.PATCH,
+                requestEntity,
+                String.class,
+                previousService.getMeta().getGuid());
+    }
+
+    @Override
+    public void updateService(CloudService service, Map<String, Object> parameters) {
+        this.updateService(service, null, parameters);
+    }
+
+    @Override
+    public void updateService(CloudService previousService, CloudService updatedService) {
+        this.updateService(previousService, updatedService, null);
     }
 
     @Override

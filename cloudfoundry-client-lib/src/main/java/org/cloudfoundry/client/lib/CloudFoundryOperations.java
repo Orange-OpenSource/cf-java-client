@@ -274,6 +274,14 @@ public interface CloudFoundryOperations {
     void createService(CloudService service);
 
     /**
+     * Create a service.
+     *
+     * @param service    cloud service info
+     * @param parameters parameters to pass to the request
+     */
+    void createService(CloudService service, Map<String, Object> parameters);
+
+    /**
      * Create a service broker.
      *
      * @param serviceBroker cloud service broker info
@@ -1160,6 +1168,31 @@ public interface CloudFoundryOperations {
      * @see http://docs.cloudfoundry.org/adminguide/app-sec-groups.html
      */
     void updateSecurityGroup(String name, InputStream jsonRulesFile);
+
+    /**
+     * Update a service instance
+     *
+     * @param previousService previous service to update
+     * @param updatedService  service with new information to update
+     * @param parameters      pass parameters to the request
+     */
+    void updateService(CloudService previousService, CloudService updatedService, Map<String, Object> parameters);
+
+    /**
+     * Update a service instance
+     *
+     * @param service    previous service to update
+     * @param parameters pass parameters to the request
+     */
+    void updateService(CloudService service, Map<String, Object> parameters);
+
+    /**
+     * Update a service instance
+     *
+     * @param previousService previous service to update
+     * @param updatedService  ervice with new information to update
+     */
+    void updateService(CloudService previousService, CloudService updatedService);
 
     /**
      * Update a service broker (unchanged forces catalog refresh).

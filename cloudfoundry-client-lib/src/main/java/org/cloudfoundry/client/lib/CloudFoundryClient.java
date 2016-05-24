@@ -282,6 +282,11 @@ public class CloudFoundryClient implements CloudFoundryOperations {
         cc.createService(service);
     }
 
+    @Override
+    public void createService(CloudService service, Map<String, Object> parameters) {
+        this.cc.createService(service, parameters);
+    }
+
     public void createServiceBroker(CloudServiceBroker serviceBroker) {
         cc.createServiceBroker(serviceBroker);
     }
@@ -768,6 +773,22 @@ public class CloudFoundryClient implements CloudFoundryOperations {
     @Override
     public void updateSecurityGroup(String name, InputStream jsonRulesFile) {
         cc.updateSecurityGroup(name, jsonRulesFile);
+    }
+
+    @Override
+    public void updateService(CloudService previousService, CloudService updatedService, Map<String, Object>
+            parameters) {
+        this.cc.updateService(previousService, updatedService, parameters);
+    }
+
+    @Override
+    public void updateService(CloudService service, Map<String, Object> parameters) {
+        this.cc.updateService(service, parameters);
+    }
+
+    @Override
+    public void updateService(CloudService previousService, CloudService updatedService) {
+        this.cc.updateService(previousService, updatedService);
     }
 
     public void updateServiceBroker(CloudServiceBroker serviceBroker) {
