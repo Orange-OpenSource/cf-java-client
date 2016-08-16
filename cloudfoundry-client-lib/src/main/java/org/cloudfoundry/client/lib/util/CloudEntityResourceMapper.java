@@ -269,9 +269,16 @@ public class CloudEntityResourceMapper {
     private CloudServiceLastOperation mapCloudServiceLastOperation(Map<String, Object> serviceOperation) {
         CloudServiceLastOperation cloudServiceLastOperation = new CloudServiceLastOperation();
         cloudServiceLastOperation.setState(serviceOperation.get("state").toString());
-        cloudServiceLastOperation.setDescription(serviceOperation.get("description").toString());
-        cloudServiceLastOperation.setType(OperationType.valueOf(serviceOperation.get("type").toString
-                ().toUpperCase()));
+        String description = "";
+        if (serviceOperation.get("description") != null) {
+            description = serviceOperation.get("description").toString();
+        }
+        OperationType operationType = OperationType.UPDATE;
+        if (serviceOperation.get("type") != null) {
+            operationType = OperationType.valueOf(serviceOperation.get("type").toString().toUpperCase());
+        }
+        cloudServiceLastOperation.setDescription(description);
+        cloudServiceLastOperation.setType(operationType);
         return cloudServiceLastOperation;
     }
 
