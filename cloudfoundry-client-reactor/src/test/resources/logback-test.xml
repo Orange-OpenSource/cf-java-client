@@ -15,9 +15,9 @@
   ~ limitations under the License.
   -->
 
-<configuration>
+<configuration debug="true" packagingData="true">
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%-20thread %-33logger %msg%n</pattern>
         </encoder>
@@ -26,8 +26,9 @@
     <logger name="cloudfoundry-client.request"  level="${CLIENT_LOGGING_LEVEL:-INFO}"/>
     <logger name="cloudfoundry-client.response" level="${CLIENT_LOGGING_LEVEL:-INFO}"/>
     <logger name="okhttp3"                      level="WARN"/>
-    <logger name="reactor.ipc.netty"            level="INFO"/>
     <logger name="stream"                       level="INFO"/>
+    <logger name="reactor.ipc.netty"            level="DEBUG"/>
+    <logger name="org.cloudfoundry.reactor.TestRecentLog" level="DEBUG" />
 
     <root level="WARN">
         <appender-ref ref="STDOUT"/>
