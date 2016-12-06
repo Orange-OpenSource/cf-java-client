@@ -101,7 +101,7 @@ public final class SpringLoggingClient implements LoggingClient {
 
     private static URI getLoggingEndpoint(CloudFoundryClient cloudFoundryClient) {
         return requestInfo(cloudFoundryClient)
-            .map(GetInfoResponse::getLoggingEndpoint)
+            .map(GetInfoResponse::getDopplerLoggingEndpoint)
             .map(URI::create)
             .get(Duration.ofSeconds(5));
     }
